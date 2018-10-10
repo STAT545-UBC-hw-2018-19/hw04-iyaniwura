@@ -1,0 +1,431 @@
+---
+title: "Homework_04"
+author: "Sarafa Iyaniwura"
+date: "October 5, 2018"
+output: 
+    github_document:
+      toc: yes
+---
+
+
+
+Homework 04: Tidy data and join
+===
+
+  * In this assignment, we shall be using tidy data to aggregate and reshape data.
+  
+  Let us begin by loading the necessary packages for these exercises.
+  
+## Loading libraries
+
+```{r}
+library(tidyr) # loads tidyr library
+library(dplyr)  # loads dplyr library
+library(gapminder)  # loads gapminder data
+library(ggplot2) # loads ggplot library
+library(reshape2) # loads reshape library
+```
+
+
+## Data Reshaping Prompt (and relationship to aggregation)
+
+
+### Activity #2
+  
+  * Make a tibble with one row per year and column for life expectancy for two or more countries.
+      
+      * Use `knitr::kable()` to make this table look pretty in your rendered homework
+      * Take advantage of this new data shape to scatterplot life expectancy for one country against that of another
+      
+  
+Let us start be extracting the life expectancy data for European countries only.
+
+```{r}
+EU_LifExp <- gapminder  %>%  # loads gapminder data
+  filter(continent == 'Europe') %>%  # collects only European countries
+  select(year,country,lifeExp) # selects the columns listed
+
+# displaying table
+head(EU_LifExp,15) %>% # displays only the first 15 lines of EU_LifExp
+  knitr::kable()
+```
+
+
+Now, let us use the `spread()` function of make a data frame that has the life expectancy of each of the European countries in its column, and the years in the rows.
+
+```{r}
+EU_spread <- EU_LifExp %>%  # loads EU_LifeExp and pipes it into the next line
+            spread( key = "country",value = "lifeExp")  # make a new data frame whose rows are years and columns are life expectancy for each European country
+
+knitr::kable(EU_spread)
+```
+
+Let us display the `EU_spread` data frame for only few selected countries.
+
+```{r}
+# displaying table
+EU_spread %>% # loads EU_spread
+  select(year,France,Finland,Turkey) %>%  # selects columns for the listed countries
+  knitr::kable()
+```
+
+We can plot the life expectancy for one country against the other using `geom_point()` in ggplot.
+
+```{r}
+# Plotting data
+EU_spread %>% # loads EU_spread
+  ggplot(aes(Finland,France, size=year) ) + # plots data for 
+         geom_point(aes(size=year)) + ggtitle("Life expectancy over years: France vs Finland")  # specifies the type of plot and the title
+```
+
+How about for Turkey and France ?
+
+```{r}
+# Plotting data
+EU_spread %>% # loads EU_spread
+  ggplot(aes(Turkey,France, size=year) ) + # plots data for 
+         geom_point(aes(size=year),color = "red", alpha=0.5) + ggtitle("Life expectancy over years: Turkey vs Finland") # specifies the type of plot and the title
+```
+
+
+
+### Activity #4 
+
+  * In Windows fucntions, we formed a tobble with 24 rows: 2 per year, giving the country with both the lowest and higest life expectancy (in Asia). Take that table (or a small one for all continents) and reshape it so you have one row per year or per year*continent combination
+
+
+```{r}
+WinData <- gapminder %>%
+    filter(continent=="Asia") %>%
+    select(year, country, lifeExp) %>%
+    group_by(year) %>%
+    filter(min_rank(desc(lifeExp)) < 2 | min_rank(lifeExp) < 2) %>% 
+    arrange(year) 
+
+# displaying data
+WinData %>%
+   knitr::kable()
+
+```
+
+```{r}
+WinData %>%
+  spread( key = "country",value = "lifeExp") %>%  
+  knitr::kable()  
+```
+
+I am not sure of exactly what this activity actually wants us to, I just decided to do something.
+
+
+
+## Join Prompts (join, merge, look up)
+
+  * Create a second data frame, complementary to Gapminder. Join this with (part of) Gapminder using a `dplyr` join function and make some observations about the process and results. Explore the different types of joins. Examples of second data frame you could build:
+      * One row per country, a country variable and one or more variables with extra info, such as language spoken, NATO membership, national animal, or capitol city.
+      * One row per continent, a continent variable and one or more variables with extra info, such as northern versus southern hemisphere
+
+### Activity #1
+
+  * Complementary gapminderdata
+
+The complementary data I have selected for this excercise is the `country_code` data. This data contains the abbreviations for each country in the Gapminder data and a three-digit country codes defined in ISO 3166-1, part of ISO 3166 standard published by the [International Organization for Standardization (ISO)](https://en.wikipedia.org/wiki/ISO_3166-1_numeric). 
+
+Let us take a look at this data. First, we check the data type and display the first few rows of the data.
+
+
+```{r}
+country_codes %>%
+  class()
+```
+
+The data is a dataframe! Yay! How about we view the first few rows of the data.
+
+```{r}
+head(country_codes,10) %>% # displays first 10 rows
+  knitr::kable()
+```
+
+How large is this data frame compared to the Gapminder data frame? To be more specific, how many countries are in the `country_codes` data frame?
+
+```{r}
+dim(country_codes) # displays number of rows and columns of the data
+length(unique(gapminder$country)) # displays the number of countries in the gapminder data
+length(unique(gapminder_unfiltered$country))  # displays the number of countries in the gapminder_unfiltered data
+
+```
+
+Observe that the `country_code` has 187 countries while the gapminder data has 142 countries. 
+
+I will be extracting part of the gapminder data and the country code data for this activity. I have decided to take 7 rows from each data frame. 
+
+For the gapminder data, I will first filter the data for a specific year before exact few rows.
+
+```{r}
+# Extracting gapminder data to be used  and call the new data frame 'GAP'
+GAP <- gapminder %>%  # loads gapminder data
+        filter(year == "1952") %>%  # extract data for 1952 for each country
+        filter( country %in% c('Afghanistan', 'Nigeria', 'Ghana', 'Canada', 'France', 'Mexico', 'Spain'))   # extract colomns for the following conutries only
+
+# displaying table nicely
+knitr::kable(GAP)
+ 
+```
+
+Now that we have extracted the gapminder data we shall be using, let us extract the `country_codes` we want to used for this exercise.
+
+```{r}
+# Extracting country_codes data to be used and call the new data frame 'C_code'
+C_code <- country_codes %>%  # loads gapminder data
+        filter( country %in% c('Afghanistan', 'Nigeria', 'Ghana', 'Canada', 'Sweden', 'Turkey', 'Portugal'))   # extract colomns for the following conutries only
+
+# displaying table nicely
+knitr::kable(C_code)
+ 
+```
+
+Observe that I have created my new data frames so that they have some overlaps. To be speific, Nigeria, Afghanistan, Canada, and Ghana are common to both data frames.
+
+Now, that we have our new data frames, let us do some exercises with them
+
+  * `left_join()`
+    * combines the two data frames and uses the common column (the specified column) for the first data supplied as its referencing column
+    
+```{r}
+left_join(GAP,C_code) %>% # combines the two tables
+  knitr::kable()  # displays the new table nicely
+```
+
+Here, R was smart enough to determine which column is common in the two data frames and it used it for the operation. Observe that this uses the country column for GAP data frame as its referencing column to combine the two tables, and it puts `NA` for the columns that are not availables for the referencing countries.
+
+
+  * `right_join()`
+    * combines the two data frames and uses the column common (or the specified column) to the two data frame. The column for the second data supplied is used as its referencing column
+
+```{r}
+right_join(GAP,C_code) %>%  # combines the two tables
+  knitr::kable()  # displays the  new table nicely
+```
+
+For this case, the country column for the C_code data frame is used as the referening column and the data that are not available for these countries are filled with `NA`.
+
+
+ * `inner_join()`
+    * Creates a new data frame that contains only the rows that are common in the referencing columns of the data frames supplied
+
+```{r}
+inner_join(GAP,C_code) %>%  # combines the two tables for only the rows that are common to the data frame 
+  knitr::kable()  # displays the new table nicely
+```
+
+Observe that the columns of the first data frame come before that of the second data frame. Let us see what happens if we change the order of the data frames in the `inner_join()` function.
+
+```{r}
+inner_join(C_code,GAP) %>%  # combines the two tables for only the rows that are common to the data frame 
+  knitr::kable()  # displays the new table nicely
+```
+
+After interchanging the order the data frames are supplied to the function, the ordering of the columns changes, this shows that the ordering of the columns dependes on how the data frames are supplied in the function. 
+
+ * `full_join()`
+    * Creates a new data frame which is a combination of the two data frames supplied to the function without duplication in the rows for the referencing column
+
+```{r}
+full_join(GAP,C_code) %>%  # combines the two tables  
+  knitr::kable()  # displays the new table nicely
+```
+
+Using the `full_join()` function allows us to combine the  two tables in such a way that the all the entries of the referencing columns for the two tables are combined without repitition.  It fills in `NA` where the data is not available. For instance, France, Mexico, and Spain are in the GAP data frame, but not in C_code, when the `full_join()` is used, the `iso_alpha` and `iso_num` for these countries is filled with `NA`. 
+
+
+ * `semi_join()`
+    * Creates a new data frame whose rows are the rows common to the data frames supplied to the function
+
+
+```{r}
+semi_join(C_code,GAP) %>%
+  knitr::kable()  # displays the new table nicely
+
+semi_join(GAP,C_code) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+From these two codes, we notice that the `semi_join()` function creates a new data frame that contains only the rows that are common to both  input data frames, and uses the column of the first data frame only.
+
+
+ * `anti_join()`
+    * Creates a new data frame whose rows are the rows in the first data frame but not in the second, and the columns are all the columns of the first data frame only 
+
+
+```{r}
+anti_join(C_code,GAP) %>%
+  knitr::kable()  # displays the new table nicely
+
+
+anti_join(GAP,C_code) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+
+ * Set Operations
+    * The set operations `union()`, `intersect()', and `setdiff()`, and `setequal()` cannot be used on the GAP and C_code data frames because they do not have the same number of variables and variable names.
+    
+    
+Let us creat new data frames we can use to illustrate how these functions work.
+
+```{r}
+# creating a new data frame call df1
+df1 <- country_codes %>%
+  head()
+
+knitr::kable(df1)  # displays the new table nicely
+```
+
+```{r}
+# creating a new data frame call df1
+df2 <- country_codes %>%
+  head(10) %>%
+  arrange(desc(country))  # re-arrange the order of the countries
+
+knitr::kable(df2)  # displays the new table nicely
+
+```
+
+Observe that I have selected the data frame so that there is some overlap, I also make sure that they are not arranged in the same order
+
+  * `union()`function
+  
+```{r}
+union(df1,df2) %>%
+  knitr::kable()  # displays the new table nicely
+
+union(df2,df1) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+We observe that the union function stacks the two table on top of each other, although, the order with which the tables are entered into the data frame is important.
+
+
+  * `intersect()` function
+  
+```{r}
+intersect(df1,df2) %>%
+  knitr::kable()  # displays the new table nicely
+
+intersect(df2,df1) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+The `intersect()` function makes a new data frame which contains the rows that are idenitcal in the input data frames.
+
+
+ * `setdiff()` function
+  
+```{r}
+setdiff(df1,df2) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+Observe that this code does not return anything, this is because the `df1` data frame has less number of rows compared to the `df2` data frame. Let us see what happens when we interchange the inputs. 
+
+```{r}
+setdiff(df2,df1) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+This result gives the rows that are in `df2` but not in `df1`. Unlike the previous code, this code produce a result because the data frame `df2` has more rows than `df1`.  I view what happens here like asking the question; which rows of `df2` are not in `df1`?
+If we ask this question;  which rows of `df1` are not in `df2`? The result will be an empty set because all the rows of `df1` are in `df2`. This is the reason why the first code did not produce any result.
+
+ * `setequal()` function
+  
+```{r}
+result <- setequal(df1,df2)
+result
+```
+
+This function determines if the two data frames are equal, and it output is either `TRUE` or `FALSE`. Since the `df1` and `df2` data frames are not the same, the result is `FALSE`.
+
+
+
+
+  * `bind_rows()` function
+  
+```{r}
+bind_rows(df1,df2) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+The `bindrows()` function stacks the two data frames together with repetition. Recall that `df1` and `df2` data frames have the same variables, what will this function if the two data frame do not have the same variables? To answer this question, let us use the `GAP` and `C_code` data frame we created earlier.
+
+```{r}
+bind_rows(GAP,C_code) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+Like the previous example, the function stacks the two data frames together. But since these data frames do not have the same columns, in the new data frame created, the columns is a combination of all the columns of the two input data frames, and the overlapping cell are filled with `NA`. Let us check what the `bind_cols()` function does. First, this function requires that in input data frames have the number of rows. As a result of this, the `df1` and `df2` data frames will not be used here.
+
+  * `bind_cols()` function
+  
+```{r}
+bind_cols(GAP,C_code) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+This fucntion puts the input data frames side-by-side from left to right. To verify this, we interchange the position of the input data frames. 
+
+
+```{r}
+bind_cols(C_code,GAP) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+Nice! Our hypothesis is correct!
+
+
+  * `merge()` function
+  
+  
+```{r}
+merge(C_code,GAP) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+
+
+```{r}
+merge(GAP,C_code) %>%
+  knitr::kable()  # displays the new table nicely
+```
+
+The `merge()` function creates a new data frame whose rows are the rows common to the two input data frames, and its columns are the commons of the two input data frames from left to right. What this means is that the columns of the first input the come before those of the second input. Thus, the order at which the input data frames are supplied to the functions is input.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
