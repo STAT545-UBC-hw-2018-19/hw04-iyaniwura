@@ -9,4 +9,4 @@ This repository contains 3 files (including the readme file) and a folder. Here 
 2. Homework_04.Rmd: R markdown document that contains the code for the homework
 3. Homework_04.md: markdown document that contains the code for the homework
 
-Here is a link to [homework_04.md](https://github.com/STAT545-UBC-students/hw03-iyaniwura/blob/master/homework_03.md) file for easy access.
+Here is a link to [homework_04.md](https://github.com/STAT545-UBC-students/hw04-iyaniwura/blob/master/Homework_04.md) file for easy access.
