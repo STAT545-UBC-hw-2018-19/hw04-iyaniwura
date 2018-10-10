@@ -155,7 +155,7 @@ How about for Turkey and France ?
 # Plotting data
 EU_spread %>% # loads EU_spread
   ggplot(aes(Turkey,France, size=year) ) + # plots data for 
-         geom_point(aes(size=year),color = "red", alpha=0.5) + ggtitle("Life expectancy over years: Turkey vs Finland") # specifies the type of plot and the title
+         geom_point(aes(size=year),color = "red", alpha=0.5) + ggtitle("Life expectancy over years: France vs Turkey") # specifies the type of plot and the title
 ```
 
 ![](Homework_04_files/figure-markdown_github/unnamed-chunk-6-1.png)
